@@ -47,11 +47,6 @@ jobs:
         fi
         cd ..
 
-    - name: Patch kernel to force integrated assembler
-      run: |
-        sed -i '/^KBUILD_CFLAGS\s*:=/ s/$/ -fintegrated-as/' kernel-4.19/Makefile
-        grep 'fintegrated' kernel-4.19/Makefile
-
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
 
@@ -60,7 +55,7 @@ jobs:
         cd kernel-4.19
         rm -rf out/
 
-        export KCFLAGS="-Wno-gnu-variable-sized-type-not-at-end -fintegrated-as"
+        export KBUILD_CFLAGS="-fintegrated-as -Wno-gnu-variable-sized-type-not-at-end"
 
         make \
           ARCH=arm64 \
