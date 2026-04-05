@@ -50,12 +50,21 @@ jobs:
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
 
-    - name: Build the Kernel
+    - name: Debug assembler issue
       run: |
         cd kernel-4.19
-        rm -rf out/
-
-        export KBUILD_CFLAGS="-fintegrated-as -Wno-gnu-variable-sized-type-not-at-end"
+        mkdir -p out
+        # Запускаємо тільки компіляцію scripts/mod з -v щоб побачити повну команду
+        make \
+          ARCH=arm64 \
+          CC=clang \
+          CLANG_TRIPLE=aarch64-linux-gnu- \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          LD=ld.lld \
+          NM=llvm-nm \
+          OBJCOPY=llvm-objcopy \
+          O=out \
+          amar_row_wifi_defconfig 2>&1 | tail -5
 
         make \
           ARCH=arm64 \
@@ -65,41 +74,12 @@ jobs:
           LD=ld.lld \
           NM=llvm-nm \
           OBJCOPY=llvm-objcopy \
-          OBJDUMP=llvm-objdump \
-          STRIP=llvm-strip \
           O=out \
-          amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
+          V=1 scripts/mod/empty.o 2>&1 | grep -E '(clang|as |error)' | head -30 || true
 
-        make \
-          ARCH=arm64 \
-          CC=clang \
-          CLANG_TRIPLE=aarch64-linux-gnu- \
-          CROSS_COMPILE=aarch64-linux-gnu- \
-          LD=ld.lld \
-          NM=llvm-nm \
-          OBJCOPY=llvm-objcopy \
-          OBJDUMP=llvm-objdump \
-          STRIP=llvm-strip \
-          O=out \
-          -j$(nproc) 2>&1 | tee -a ../kernel_build.log
-
-    - name: Package with AnyKernel3
-      run: |
-        git clone --depth=1 https://github.com/osm0sis/AnyKernel3 AnyKernel3
-        cp kernel-4.19/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ 2>/dev/null || \
-        cp kernel-4.19/out/arch/arm64/boot/Image.gz AnyKernel3/ 2>/dev/null || \
-        cp kernel-4.19/out/arch/arm64/boot/Image AnyKernel3/
-
-        cd AnyKernel3
-        sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
-
-        zip -r9 ../NetHunter-x306f-$(date +%Y%m%d).zip * \
-          -x .git README.md *placeholder
-        cd ..
-
-    - name: Upload kernel zip
+    - name: Upload debug log
       uses: actions/upload-artifact@v4
       with:
-        name: NetHunter-x306f
-        path: NetHunter-x306f-*.zip
-        retention-days: 7
+        name: debug-log
+        path: kernel-4.19/../kernel_build.log
+        retention-days: 1
