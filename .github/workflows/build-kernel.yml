@@ -50,14 +50,20 @@ jobs:
     - name: Patch kernel Makefile
       run: |
         cd kernel-4.19
-        # Прибираємо -no-integrated-as (він вмикається через CONFIG_BROKEN_GAS_INST)
+        # Прибираємо -no-integrated-as
         sed -i 's/-no-integrated-as//g' Makefile
-        # Прибираємо -Werror щоб cgrp warning не падав як error
+        # Прибираємо -Werror
         sed -i 's/$(call cc-option,-Werror=unknown-warning-option,)//g' Makefile
         sed -i 's/KBUILD_CFLAGS += -Werror\b/KBUILD_CFLAGS +=/' Makefile
         # Додаємо Wno для cgrp
         echo 'KBUILD_CFLAGS += -Wno-gnu-variable-sized-type-not-at-end' >> Makefile
+        # vdso Makefile: використовуємо GNU as для .S файлів (вони мають іменовані макро-аргументи)
+        sed -i 's/$(CC) $(c_flags)/$(CC) $(c_flags) -fno-integrated-as/' \
+          arch/arm64/kernel/vdso/Makefile || true
+        # Явно вказуємо AS для vdso
+        sed -i '1s/^/AS := aarch64-linux-gnu-as\n/' arch/arm64/kernel/vdso/Makefile
         echo "Patched OK"
+        head -5 arch/arm64/kernel/vdso/Makefile
 
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
