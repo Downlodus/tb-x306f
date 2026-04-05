@@ -51,9 +51,6 @@ jobs:
       run: |
         cd kernel-4.19
 
-        # Прибираємо -no-integrated-as глобально
-        sed -i 's/-no-integrated-as//g' Makefile
-
         # Прибираємо -Werror
         sed -i 's/$(call cc-option,-Werror=unknown-warning-option,)//g' Makefile
         sed -i 's/KBUILD_CFLAGS += -Werror\b/KBUILD_CFLAGS +=/' Makefile
@@ -61,16 +58,7 @@ jobs:
         # Додаємо Wno для cgrp
         echo 'KBUILD_CFLAGS += -Wno-gnu-variable-sized-type-not-at-end' >> Makefile
 
-        # Патчимо gettimeofday.S - замінюємо іменовані аргументи макросу на позиційні
-        # GNU as: clock_gettime_return, shift=1
-        # llvm as: clock_gettime_return 1
-        sed -i 's/clock_gettime_return, shift=1/clock_gettime_return 1/g' \
-          arch/arm64/kernel/vdso/gettimeofday.S
-
-        echo "=== vdso patch check ==="
-        grep 'clock_gettime_return' arch/arm64/kernel/vdso/gettimeofday.S
-
-        # Fix for note.S: changed section flags for .note.Linux
+        # Fix for note.S: changed section flags for .note.Linux (harmless for GNU AS)
         sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
           arch/arm64/kernel/vdso/note.S
 
