@@ -101,7 +101,7 @@ jobs:
         done
         cd ../../..
 
-    - name: Ensure missing dt-bindings exist
+    - name: Ensure missing dt-bindings exist & Remove broken dtbs
       run: |
         mkdir -p kernel-4.19/include/dt-bindings/thermal/
         if [ ! -f kernel-4.19/include/dt-bindings/thermal/thermal.h ]; then
@@ -110,6 +110,9 @@ jobs:
           echo '#define THERMAL_NO_LIMIT (~0)' >> kernel-4.19/include/dt-bindings/thermal/thermal.h
           echo '#endif' >> kernel-4.19/include/dt-bindings/thermal/thermal.h
         fi
+        
+        # Видаляємо зламаний dtbs, який взагалі не стосується нашого планшета (mt2712)
+        sed -i '/2712/d' kernel-4.19/arch/arm64/boot/dts/mediatek/Makefile || true
 
     - name: Build the Kernel
       run: |
