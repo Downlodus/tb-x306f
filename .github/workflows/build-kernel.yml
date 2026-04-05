@@ -65,6 +65,10 @@ jobs:
         echo 'KBUILD_CFLAGS += -Wno-align-mismatch' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-bitwise-instead-of-logical' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-strict-prototypes' >> Makefile
+        echo 'KBUILD_CFLAGS += -Wno-error' >> Makefile
+
+        # Глобально вирізаємо -Werror з усіх Makefile'ів MediaTek, бо старий код повний ворнінгів
+        find drivers net fs mm -name "Makefile" -type f -exec sed -i 's/-Werror//g' {} +
 
         # Fix for note.S: changed section flags for .note.Linux (harmless for GNU AS)
         sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
@@ -123,7 +127,6 @@ jobs:
           OBJDUMP=llvm-objdump \
           STRIP=llvm-strip \
           O=out \
-          KCFLAGS="-Wno-error -Wno-unused-but-set-variable -Wno-align-mismatch -Wno-bitwise-instead-of-logical -Wno-strict-prototypes" \
           amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
 
         make \
@@ -137,7 +140,6 @@ jobs:
           OBJDUMP=llvm-objdump \
           STRIP=llvm-strip \
           O=out \
-          KCFLAGS="-Wno-error -Wno-unused-but-set-variable -Wno-align-mismatch -Wno-bitwise-instead-of-logical -Wno-strict-prototypes" \
           -j$(nproc) 2>&1 | tee -a ../kernel_build.log
 
     - name: Package with AnyKernel3
