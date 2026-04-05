@@ -61,13 +61,14 @@ jobs:
         # Додаємо Wno для cgrp
         echo 'KBUILD_CFLAGS += -Wno-gnu-variable-sized-type-not-at-end' >> Makefile
 
-        # Для vdso повертаємо -no-integrated-as бо gettimeofday.S має GNU as синтаксис
-        echo 'KBUILD_AFLAGS += -no-integrated-as' >> arch/arm64/kernel/vdso/Makefile
+        # Патчимо gettimeofday.S - замінюємо іменовані аргументи макросу на позиційні
+        # GNU as: clock_gettime_return, shift=1
+        # llvm as: clock_gettime_return 1
+        sed -i 's/clock_gettime_return, shift=1/clock_gettime_return 1/g' \
+          arch/arm64/kernel/vdso/gettimeofday.S
 
-        echo "=== Main Makefile patch ==="
-        grep 'integrated\|Werror\|gnu-variable' Makefile || true
-        echo "=== vdso Makefile patch ==="
-        tail -3 arch/arm64/kernel/vdso/Makefile
+        echo "=== vdso patch check ==="
+        grep 'clock_gettime_return' arch/arm64/kernel/vdso/gettimeofday.S
 
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
