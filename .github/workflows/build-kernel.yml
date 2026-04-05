@@ -59,8 +59,9 @@ jobs:
         sed -i 's/$(call cc-option,-Werror=unknown-warning-option,)//g' Makefile
         sed -i 's/KBUILD_CFLAGS += -Werror\b/KBUILD_CFLAGS +=/' Makefile
 
-        # Додаємо Wno для cgrp
+        # Додаємо Wno для cgrp та інших
         echo 'KBUILD_CFLAGS += -Wno-gnu-variable-sized-type-not-at-end' >> Makefile
+        echo 'KBUILD_CFLAGS += -Wno-unused-but-set-variable' >> Makefile
 
         # Fix for note.S: changed section flags for .note.Linux (harmless for GNU AS)
         sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
