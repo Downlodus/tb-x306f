@@ -47,24 +47,25 @@ jobs:
         fi
         cd ..
 
+    - name: Patch kernel Makefile
+      run: |
+        cd kernel-4.19
+        # Прибираємо -no-integrated-as (він вмикається через CONFIG_BROKEN_GAS_INST)
+        sed -i 's/-no-integrated-as//g' Makefile
+        # Прибираємо -Werror щоб cgrp warning не падав як error
+        sed -i 's/$(call cc-option,-Werror=unknown-warning-option,)//g' Makefile
+        sed -i 's/KBUILD_CFLAGS += -Werror\b/KBUILD_CFLAGS +=/' Makefile
+        # Додаємо Wno для cgrp
+        echo 'KBUILD_CFLAGS += -Wno-gnu-variable-sized-type-not-at-end' >> Makefile
+        echo "Patched OK"
+
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
 
-    - name: Debug assembler issue
+    - name: Build the Kernel
       run: |
         cd kernel-4.19
-        mkdir -p out
-        # Запускаємо тільки компіляцію scripts/mod з -v щоб побачити повну команду
-        make \
-          ARCH=arm64 \
-          CC=clang \
-          CLANG_TRIPLE=aarch64-linux-gnu- \
-          CROSS_COMPILE=aarch64-linux-gnu- \
-          LD=ld.lld \
-          NM=llvm-nm \
-          OBJCOPY=llvm-objcopy \
-          O=out \
-          amar_row_wifi_defconfig 2>&1 | tail -5
+        rm -rf out/
 
         make \
           ARCH=arm64 \
@@ -74,12 +75,41 @@ jobs:
           LD=ld.lld \
           NM=llvm-nm \
           OBJCOPY=llvm-objcopy \
+          OBJDUMP=llvm-objdump \
+          STRIP=llvm-strip \
           O=out \
-          V=1 scripts/mod/empty.o 2>&1 | grep -E '(clang|as |error)' | head -30 || true
+          amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
 
-    - name: Upload debug log
+        make \
+          ARCH=arm64 \
+          CC=clang \
+          CLANG_TRIPLE=aarch64-linux-gnu- \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          LD=ld.lld \
+          NM=llvm-nm \
+          OBJCOPY=llvm-objcopy \
+          OBJDUMP=llvm-objdump \
+          STRIP=llvm-strip \
+          O=out \
+          -j$(nproc) 2>&1 | tee -a ../kernel_build.log
+
+    - name: Package with AnyKernel3
+      run: |
+        git clone --depth=1 https://github.com/osm0sis/AnyKernel3 AnyKernel3
+        cp kernel-4.19/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ 2>/dev/null || \
+        cp kernel-4.19/out/arch/arm64/boot/Image.gz AnyKernel3/ 2>/dev/null || \
+        cp kernel-4.19/out/arch/arm64/boot/Image AnyKernel3/
+
+        cd AnyKernel3
+        sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+
+        zip -r9 ../NetHunter-x306f-$(date +%Y%m%d).zip * \
+          -x .git README.md *placeholder
+        cd ..
+
+    - name: Upload kernel zip
       uses: actions/upload-artifact@v4
       with:
-        name: debug-log
-        path: kernel-4.19/../kernel_build.log
-        retention-days: 1
+        name: NetHunter-x306f
+        path: NetHunter-x306f-*.zip
+        retention-days: 7
