@@ -51,21 +51,22 @@ jobs:
 
     - name: Build the Kernel
       run: |
-        # Clang з репо не працює на Ubuntu (exec format error)
-        # Використовуємо системний clang з правильними прапорами
-        chmod +x build_kernel.sh
         cd kernel-4.19
         rm -rf out/
 
+        GCC=$GITHUB_WORKSPACE/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-androidkernel-
+
         MAKE_ARGS="ARCH=arm64
           CC=clang
+          AS=llvm-as
           CLANG_TRIPLE=aarch64-linux-gnu-
-          CROSS_COMPILE=$GITHUB_WORKSPACE/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-androidkernel-
+          CROSS_COMPILE=$GCC
           LD=ld.lld
           NM=llvm-nm
           OBJCOPY=llvm-objcopy
           OBJDUMP=llvm-objdump
           STRIP=llvm-strip
+          KCFLAGS=-Wno-gnu-variable-sized-type-not-at-end
           O=out"
 
         make $MAKE_ARGS amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
