@@ -32,12 +32,6 @@ jobs:
           https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
           prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
 
-    - name: Check Clang from repo
-      run: |
-        ls prebuilts/clang/host/linux-x86/clang-r383902/bin/
-        chmod +x prebuilts/clang/host/linux-x86/clang-r383902/bin/*
-        prebuilts/clang/host/linux-x86/clang-r383902/bin/clang --version || echo "CLANG BROKEN"
-
     - name: Apply NetHunter Patches
       run: |
         git clone https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder.git /tmp/nh-builder || true
@@ -57,8 +51,25 @@ jobs:
 
     - name: Build the Kernel
       run: |
+        # Clang з репо не працює на Ubuntu (exec format error)
+        # Використовуємо системний clang з правильними прапорами
         chmod +x build_kernel.sh
-        ./build_kernel.sh
+        cd kernel-4.19
+        rm -rf out/
+
+        MAKE_ARGS="ARCH=arm64
+          CC=clang
+          CLANG_TRIPLE=aarch64-linux-gnu-
+          CROSS_COMPILE=$GITHUB_WORKSPACE/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-androidkernel-
+          LD=ld.lld
+          NM=llvm-nm
+          OBJCOPY=llvm-objcopy
+          OBJDUMP=llvm-objdump
+          STRIP=llvm-strip
+          O=out"
+
+        make $MAKE_ARGS amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
+        make $MAKE_ARGS -j$(nproc) 2>&1 | tee -a ../kernel_build.log
 
     - name: Package with AnyKernel3
       run: |
