@@ -154,7 +154,31 @@ jobs:
         cp kernel-4.19/out/arch/arm64/boot/Image AnyKernel3/
 
         cd AnyKernel3
-        sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+        cat << 'EOF' > anykernel.sh
+        ### AnyKernel3 Ramdisk Mod Script
+        properties() { '
+        kernel.string=NetHunter Kernel for tb-x306f
+        do.devicecheck=0
+        do.modules=0
+        do.systemless=1
+        do.cleanup=1
+        do.cleanuponabort=0
+        '; }
+
+        boot_attributes() {
+          set_perm_recursive 0 0 755 644 $RAMDISK/*;
+          set_perm_recursive 0 0 750 750 $RAMDISK/init* $RAMDISK/sbin;
+        }
+
+        BLOCK=/dev/block/by-name/boot;
+        IS_SLOT_DEVICE=0;
+        RAMDISK_COMPRESSION=auto;
+        PATCH_VBMETA_FLAG=auto;
+
+        . tools/ak3-core.sh;
+        dump_boot;
+        write_boot;
+        EOF
 
         zip -r9 ../NetHunter-x306f-$(date +%Y%m%d).zip * \
           -x .git README.md *placeholder
