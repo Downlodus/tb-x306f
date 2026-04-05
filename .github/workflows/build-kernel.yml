@@ -121,6 +121,10 @@ jobs:
         # Виправляємо шляхи include для компілятора DTS (через зламані symlink-и у Windows)
         sed -i 's|-I$(srctree)/arch/$(SRCARCH)/boot/dts/include|-I$(srctree)/arch/$(SRCARCH)/boot/dts/include -I$(srctree)/include|g' kernel-4.19/scripts/Makefile.lib
 
+        # Створюємо пустий OEM файл cust.dtsi, якого не вистачає в репозиторії
+        mkdir -p kernel-4.19/include/amar_row_wifi
+        touch kernel-4.19/include/amar_row_wifi/cust.dtsi
+
     - name: Build the Kernel
       run: |
         cd kernel-4.19
