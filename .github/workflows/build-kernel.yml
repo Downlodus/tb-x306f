@@ -32,6 +32,12 @@ jobs:
           https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
           prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
 
+    - name: Check Clang from repo
+      run: |
+        ls prebuilts/clang/host/linux-x86/clang-r383902/bin/
+        chmod +x prebuilts/clang/host/linux-x86/clang-r383902/bin/*
+        prebuilts/clang/host/linux-x86/clang-r383902/bin/clang --version || echo "CLANG BROKEN"
+
     - name: Apply NetHunter Patches
       run: |
         git clone https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder.git /tmp/nh-builder || true
