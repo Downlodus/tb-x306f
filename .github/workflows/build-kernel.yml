@@ -47,6 +47,13 @@ jobs:
         fi
         cd ..
 
+    - name: Patch kernel to force integrated assembler
+      run: |
+        # Додаємо -fintegrated-as в KBUILD_CFLAGS в Makefile ядра
+        sed -i '/^KBUILD_CFLAGS\s*:=/ s/$/ -fintegrated-as/' kernel-4.19/Makefile
+        # Перевіримо що вставилось
+        grep 'fintegrated' kernel-4.19/Makefile
+
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
 
@@ -54,8 +61,6 @@ jobs:
       run: |
         cd kernel-4.19
         rm -rf out/
-
-        GCC=$GITHUB_WORKSPACE/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-androidkernel-
 
         MAKE_ARGS="ARCH=arm64
           CC=clang
@@ -66,7 +71,7 @@ jobs:
           OBJCOPY=llvm-objcopy
           OBJDUMP=llvm-objdump
           STRIP=llvm-strip
-          KCFLAGS=-Wno-gnu-variable-sized-type-not-at-end
+          KCFLAGS='-Wno-gnu-variable-sized-type-not-at-end -fintegrated-as'
           O=out"
 
         make $MAKE_ARGS amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
