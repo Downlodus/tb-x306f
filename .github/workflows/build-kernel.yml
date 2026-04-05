@@ -32,6 +32,13 @@ jobs:
           https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
           prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
 
+    - name: Replace system assembler with LLVM
+      run: |
+        # Замінюємо /usr/bin/as на llvm-as щоб clang не викликав GNU as
+        LLVM_AS=$(which llvm-as)
+        sudo mv /usr/bin/as /usr/bin/as.bak
+        sudo ln -s $LLVM_AS /usr/bin/as
+
     - name: Apply NetHunter Patches
       run: |
         git clone https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder.git /tmp/nh-builder || true
@@ -66,11 +73,7 @@ jobs:
           OBJDUMP=llvm-objdump
           STRIP=llvm-strip
           KCFLAGS=-Wno-gnu-variable-sized-type-not-at-end
-          CFLAGS_MODULE=-fintegrated-as
           O=out"
-
-        # Патчимо Makefile щоб clang завжди використовував вбудований асемблер
-        sed -i 's/KBUILD_CFLAGS\s*:=/KBUILD_CFLAGS := -fintegrated-as/' Makefile || true
 
         make $MAKE_ARGS amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
         make $MAKE_ARGS -j$(nproc) 2>&1 | tee -a ../kernel_build.log
