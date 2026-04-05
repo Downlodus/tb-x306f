@@ -24,20 +24,14 @@ jobs:
         gnupg libncurses5 libncurses5-dev libssl-dev libelf-dev \
         libxml2 libxml2-utils lzop rsync zip zlib1g-dev \
         python3 libarchive-tools wget patch \
-        clang lld llvm
+        clang lld llvm \
+        gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
     - name: Download Android GCC Toolchain
       run: |
         git clone --depth=1 \
           https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
           prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
-
-    - name: Replace system assembler with LLVM
-      run: |
-        # Замінюємо /usr/bin/as на llvm-as щоб clang не викликав GNU as
-        LLVM_AS=$(which llvm-as)
-        sudo mv /usr/bin/as /usr/bin/as.bak
-        sudo ln -s $LLVM_AS /usr/bin/as
 
     - name: Apply NetHunter Patches
       run: |
@@ -66,7 +60,7 @@ jobs:
         MAKE_ARGS="ARCH=arm64
           CC=clang
           CLANG_TRIPLE=aarch64-linux-gnu-
-          CROSS_COMPILE=$GCC
+          CROSS_COMPILE=aarch64-linux-gnu-
           LD=ld.lld
           NM=llvm-nm
           OBJCOPY=llvm-objcopy
