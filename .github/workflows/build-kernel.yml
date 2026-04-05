@@ -63,6 +63,7 @@ jobs:
         echo 'KBUILD_CFLAGS += -Wno-gnu-variable-sized-type-not-at-end' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-unused-but-set-variable' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-align-mismatch' >> Makefile
+        echo 'KBUILD_CFLAGS += -Wno-bitwise-instead-of-logical' >> Makefile
 
         # Fix for note.S: changed section flags for .note.Linux (harmless for GNU AS)
         sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
@@ -76,6 +77,15 @@ jobs:
       run: |
         find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
         chmod +x kernel-4.19/tools/build/cpio || true
+
+    - name: Fix Windows Git Case Issues (Netfilter Headers)
+      run: |
+        cd kernel-4.19/include/uapi/linux/netfilter/
+        [ -f xt_connmark_1.h ] && cp xt_connmark_1.h xt_connmark.h || true
+        [ -f xt_rateest_1.h ] && cp xt_rateest_1.h xt_rateest.h || true
+        [ -f xt_tcpmss_1.h ] && cp xt_tcpmss_1.h xt_tcpmss.h || true
+        [ -f xt_DSCP_1.h ] && cp xt_DSCP_1.h xt_DSCP.h || true
+        [ -f xt_MARK_1.h ] && cp xt_MARK_1.h xt_MARK.h || true
 
     - name: Build the Kernel
       run: |
