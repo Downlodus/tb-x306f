@@ -1,0 +1,72 @@
+name: Build NetHunter Kernel
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Kernel for Kali NetHunter
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Install Build Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git \
+        gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool \
+        libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libwxgtk3.0-gtk3-dev libxml2 \
+        libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev \
+        python2 python3 bsdtar libelf-dev clang lld llvm wget patch
+
+    - name: Apply NetHunter Patches
+      run: |
+        # Мы скачиваем официальный репозиторий сборщика Nethunter, чтобы взять оттуда патчи
+        git clone https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder.git /tmp/nh-builder || true
+        cd kernel-4.19
+        
+        # Патч для работы инъекций кадров wifi (mac80211)
+        if [ -f "/tmp/nh-builder/patches/mac80211/mac80211-1.0-4.14.patch" ]; then
+          patch -p1 --forward < /tmp/nh-builder/patches/mac80211/mac80211-1.0-4.14.patch || echo "Patch mac80211 already applied or conflict"
+        fi
+        
+        # Патч для HID атак (BadUSB) для новых ядер
+        if [ -f "/tmp/nh-builder/patches/hid/hid-4.14.patch" ]; then
+          patch -p1 --forward < /tmp/nh-builder/patches/hid/hid-4.14.patch || echo "Patch hid already applied or conflict"
+        fi
+        cd ..
+
+    - name: Build the Kernel
+      run: |
+        chmod +x build_kernel.sh
+        ./build_kernel.sh
+
+    - name: Package with AnyKernel3
+      run: |
+        git clone --depth=1 https://github.com/osm0sis/AnyKernel3 AnyKernel3
+        # Копируем скомпилированное ядро (по логам и README оно лежит в kernel-4.19/out)
+        cp kernel-4.19/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ 2>/dev/null || \
+        cp kernel-4.19/out/arch/arm64/boot/Image.gz AnyKernel3/ 2>/dev/null || \
+        cp kernel-4.19/out/arch/arm64/boot/Image AnyKernel3/
+        
+        cd AnyKernel3
+        # Настройки для AnyKernel (убираем проверку устройства, чтобы ставилось без проблем)
+        sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+        
+        zip -r9 ../NetHunter-x306f-$(date +%Y%m%d).zip * \
+          -x .git README.md *placeholder
+        cd ..
+
+    - name: Upload kernel zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetHunter-x306f
+        path: NetHunter-x306f-*.zip
+        retention-days: 7
