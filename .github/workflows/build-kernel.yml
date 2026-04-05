@@ -58,7 +58,6 @@ jobs:
 
         MAKE_ARGS="ARCH=arm64
           CC=clang
-          AS=llvm-as
           CLANG_TRIPLE=aarch64-linux-gnu-
           CROSS_COMPILE=$GCC
           LD=ld.lld
@@ -67,7 +66,11 @@ jobs:
           OBJDUMP=llvm-objdump
           STRIP=llvm-strip
           KCFLAGS=-Wno-gnu-variable-sized-type-not-at-end
+          CFLAGS_MODULE=-fintegrated-as
           O=out"
+
+        # Патчимо Makefile щоб clang завжди використовував вбудований асемблер
+        sed -i 's/KBUILD_CFLAGS\s*:=/KBUILD_CFLAGS := -fintegrated-as/' Makefile || true
 
         make $MAKE_ARGS amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
         make $MAKE_ARGS -j$(nproc) 2>&1 | tee -a ../kernel_build.log
