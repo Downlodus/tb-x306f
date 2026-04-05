@@ -88,6 +88,9 @@ jobs:
         for mod in connmark rateest tcpmss DSCP MARK; do
           [ -f "xt_${mod}_1.h" ] && cp "xt_${mod}_1.h" "xt_${mod}.h" || true
         done
+        cd ../netfilter_ipv6/ || true
+        [ -f "ip6t_HL_1.h" ] && cp "ip6t_HL_1.h" "ip6t_HL.h" || true
+        [ -f "ip6t_hl_1.h" ] && cp "ip6t_hl_1.h" "ip6t_hl.h" || true
         cd ../../../../net/netfilter/
         for mod in dscp DSCP mark MARK connmark CONNMARK rateest RATEEST tcpmss TCPMSS hl HL; do
           [ -f "xt_${mod}_1.c" ] && cp "xt_${mod}_1.c" "xt_${mod}.c" || true
