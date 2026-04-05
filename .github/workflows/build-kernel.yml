@@ -114,6 +114,9 @@ jobs:
         
         # Видаляємо зламаний dtbs, який взагалі не стосується нашого планшета (mt2712)
         sed -i '/2712/d' kernel-4.19/arch/arm64/boot/dts/mediatek/Makefile || true
+        
+        # Додаємо наш правильний DTB для компіляції
+        echo "dtb-\$(CONFIG_ARCH_MEDIATEK) += amar_row_wifi.dtb" >> kernel-4.19/arch/arm64/boot/dts/mediatek/Makefile
 
     - name: Build the Kernel
       run: |
@@ -152,6 +155,9 @@ jobs:
         cp kernel-4.19/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ 2>/dev/null || \
         cp kernel-4.19/out/arch/arm64/boot/Image.gz AnyKernel3/ 2>/dev/null || \
         cp kernel-4.19/out/arch/arm64/boot/Image AnyKernel3/
+
+        # Coping DTB
+        cp kernel-4.19/out/arch/arm64/boot/dts/mediatek/amar_row_wifi.dtb AnyKernel3/dtb || true
 
         cd AnyKernel3
         cat << 'EOF' > anykernel.sh
