@@ -62,6 +62,7 @@ jobs:
         # Додаємо Wno для cgrp та інших
         echo 'KBUILD_CFLAGS += -Wno-gnu-variable-sized-type-not-at-end' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-unused-but-set-variable' >> Makefile
+        echo 'KBUILD_CFLAGS += -Wno-align-mismatch' >> Makefile
 
         # Fix for note.S: changed section flags for .note.Linux (harmless for GNU AS)
         sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
@@ -72,7 +73,9 @@ jobs:
           arch/arm64/kernel/vdso/Makefile
 
     - name: Fix scripts permissions
-      run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
+      run: |
+        find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
+        chmod +x kernel-4.19/tools/build/cpio || true
 
     - name: Build the Kernel
       run: |
