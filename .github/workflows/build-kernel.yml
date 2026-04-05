@@ -117,6 +117,9 @@ jobs:
         
         # Додаємо наш правильний DTB для компіляції
         echo "dtb-\$(CONFIG_ARCH_MEDIATEK) += amar_row_wifi.dtb" >> kernel-4.19/arch/arm64/boot/dts/mediatek/Makefile
+        
+        # Виправляємо шляхи include для компілятора DTS (через зламані symlink-и у Windows)
+        sed -i 's|-I$(srctree)/arch/$(SRCARCH)/boot/dts/include|-I$(srctree)/arch/$(SRCARCH)/boot/dts/include -I$(srctree)/include|g' kernel-4.19/scripts/Makefile.lib
 
     - name: Build the Kernel
       run: |
