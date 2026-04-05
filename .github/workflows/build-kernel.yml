@@ -64,6 +64,10 @@ jobs:
         echo 'KBUILD_CFLAGS += -Wno-unused-but-set-variable' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-align-mismatch' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-bitwise-instead-of-logical' >> Makefile
+        echo 'KBUILD_CFLAGS += -Wno-strict-prototypes' >> Makefile
+
+        # Глобально вирізаємо -Werror з усіх Makefile'ів MediaTek, бо старий код повний ворнінгів
+        find drivers net fs mm -name "Makefile" -type f -exec sed -i 's/-Werror//g' {} +
 
         # Fix for note.S: changed section flags for .note.Linux (harmless for GNU AS)
         sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
@@ -78,14 +82,27 @@ jobs:
         find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
         chmod +x kernel-4.19/tools/build/cpio || true
 
-    - name: Fix Windows Git Case Issues (Netfilter Headers)
+    - name: Fix Windows Git Case Issues (Netfilter Headers & Sources)
       run: |
         cd kernel-4.19/include/uapi/linux/netfilter/
-        [ -f xt_connmark_1.h ] && cp xt_connmark_1.h xt_connmark.h || true
-        [ -f xt_rateest_1.h ] && cp xt_rateest_1.h xt_rateest.h || true
-        [ -f xt_tcpmss_1.h ] && cp xt_tcpmss_1.h xt_tcpmss.h || true
-        [ -f xt_DSCP_1.h ] && cp xt_DSCP_1.h xt_DSCP.h || true
-        [ -f xt_MARK_1.h ] && cp xt_MARK_1.h xt_MARK.h || true
+        for mod in connmark rateest tcpmss DSCP MARK; do
+          [ -f "xt_${mod}_1.h" ] && cp "xt_${mod}_1.h" "xt_${mod}.h" || true
+        done
+        cd ../../../../net/netfilter/
+        for mod in dscp DSCP mark MARK connmark CONNMARK rateest RATEEST tcpmss TCPMSS hl HL; do
+          [ -f "xt_${mod}_1.c" ] && cp "xt_${mod}_1.c" "xt_${mod}.c" || true
+        done
+        cd ../../..
+
+    - name: Ensure missing dt-bindings exist
+      run: |
+        mkdir -p kernel-4.19/include/dt-bindings/thermal/
+        if [ ! -f kernel-4.19/include/dt-bindings/thermal/thermal.h ]; then
+          echo '#ifndef _DT_BINDINGS_THERMAL_THERMAL_H' > kernel-4.19/include/dt-bindings/thermal/thermal.h
+          echo '#define _DT_BINDINGS_THERMAL_THERMAL_H' >> kernel-4.19/include/dt-bindings/thermal/thermal.h
+          echo '#define THERMAL_NO_LIMIT (~0)' >> kernel-4.19/include/dt-bindings/thermal/thermal.h
+          echo '#endif' >> kernel-4.19/include/dt-bindings/thermal/thermal.h
+        fi
 
     - name: Build the Kernel
       run: |
