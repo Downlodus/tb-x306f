@@ -53,6 +53,7 @@ jobs:
 
         # Fix clang cross compiler detection (elfedit might not exist in old toolchains)
         sed -i 's/$(CROSS_COMPILE)elfedit/$(CROSS_COMPILE)as/g' Makefile
+        sed -i 's/--prefix=$(GCC_TOOLCHAIN_DIR)/--prefix=$(CROSS_COMPILE)/g' Makefile
 
         # Прибираємо -Werror
         sed -i 's/$(call cc-option,-Werror=unknown-warning-option,)//g' Makefile
