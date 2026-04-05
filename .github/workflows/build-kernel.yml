@@ -49,9 +49,7 @@ jobs:
 
     - name: Patch kernel to force integrated assembler
       run: |
-        # Додаємо -fintegrated-as в KBUILD_CFLAGS в Makefile ядра
         sed -i '/^KBUILD_CFLAGS\s*:=/ s/$/ -fintegrated-as/' kernel-4.19/Makefile
-        # Перевіримо що вставилось
         grep 'fintegrated' kernel-4.19/Makefile
 
     - name: Fix scripts permissions
@@ -62,20 +60,33 @@ jobs:
         cd kernel-4.19
         rm -rf out/
 
-        MAKE_ARGS="ARCH=arm64
-          CC=clang
-          CLANG_TRIPLE=aarch64-linux-gnu-
-          CROSS_COMPILE=aarch64-linux-gnu-
-          LD=ld.lld
-          NM=llvm-nm
-          OBJCOPY=llvm-objcopy
-          OBJDUMP=llvm-objdump
-          STRIP=llvm-strip
-          KCFLAGS='-Wno-gnu-variable-sized-type-not-at-end -fintegrated-as'
-          O=out"
+        export KCFLAGS="-Wno-gnu-variable-sized-type-not-at-end -fintegrated-as"
 
-        make $MAKE_ARGS amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
-        make $MAKE_ARGS -j$(nproc) 2>&1 | tee -a ../kernel_build.log
+        make \
+          ARCH=arm64 \
+          CC=clang \
+          CLANG_TRIPLE=aarch64-linux-gnu- \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          LD=ld.lld \
+          NM=llvm-nm \
+          OBJCOPY=llvm-objcopy \
+          OBJDUMP=llvm-objdump \
+          STRIP=llvm-strip \
+          O=out \
+          amar_row_wifi_defconfig 2>&1 | tee ../kernel_build.log
+
+        make \
+          ARCH=arm64 \
+          CC=clang \
+          CLANG_TRIPLE=aarch64-linux-gnu- \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          LD=ld.lld \
+          NM=llvm-nm \
+          OBJCOPY=llvm-objcopy \
+          OBJDUMP=llvm-objdump \
+          STRIP=llvm-strip \
+          O=out \
+          -j$(nproc) 2>&1 | tee -a ../kernel_build.log
 
     - name: Package with AnyKernel3
       run: |
