@@ -66,6 +66,7 @@ jobs:
         echo 'KBUILD_CFLAGS += -Wno-bitwise-instead-of-logical' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-strict-prototypes' >> Makefile
         echo 'KBUILD_CFLAGS += -Wno-error' >> Makefile
+        echo 'KBUILD_CFLAGS += -fno-builtin-stpcpy' >> Makefile
 
         # Глобально вирізаємо -Werror з усіх Makefile'ів MediaTek, бо старий код повний ворнінгів
         find drivers net fs mm -name "Makefile" -type f -exec sed -i 's/-Werror//g' {} +
