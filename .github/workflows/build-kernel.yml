@@ -70,6 +70,10 @@ jobs:
         echo "=== vdso patch check ==="
         grep 'clock_gettime_return' arch/arm64/kernel/vdso/gettimeofday.S
 
+        # Fix for note.S: changed section flags for .note.Linux
+        sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
+          arch/arm64/kernel/vdso/note.S
+
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
 
