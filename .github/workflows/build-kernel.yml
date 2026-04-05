@@ -74,6 +74,10 @@ jobs:
         sed -i 's/ELFNOTE_START(Linux, 0, "a")/ELFNOTE_START(Linux, 0, "")/g' \
           arch/arm64/kernel/vdso/note.S
 
+        # Fix for vdso linking: unrecognised emulation mode: aarch64linux
+        sed -i 's/ccflags-y := -shared -fno-common -fno-builtin/ccflags-y := -shared -fno-common -fno-builtin -fuse-ld=lld/g' \
+          arch/arm64/kernel/vdso/Makefile
+
     - name: Fix scripts permissions
       run: find kernel-4.19 -name "*.sh" -exec chmod +x {} \;
 
