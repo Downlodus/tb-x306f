@@ -9,3 +9,7 @@ kernel-4.19/out/arch/arm64/boot/Image.gz
 - спробував зібрати для Nethunter.
 - збірка через Actions.
 - не тестував.
+## EN
+- Attempted to build for NetHunter.
+- Built using GitHub Actions.
+- Not tested.
